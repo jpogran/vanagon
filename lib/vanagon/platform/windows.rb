@@ -54,6 +54,7 @@ class Vanagon
       # @param binding [Binding] binding to use in evaluating the packaging templates
       def generate_msi_packaging_artifacts(workdir, name, binding)
         FileUtils.mkdir_p(File.join(workdir, "wix"))
+        erb_file(File.join(VANAGON_ROOT, "resources/windows/wix/project.wxs.erb"), File.join(workdir, "wix",  "#{name}.wxs"), false, { :binding => binding })
         erb_file(File.join(VANAGON_ROOT, "resources/windows/wix/service.component.wxs.erb"), File.join(workdir, "wix", "service.#{name}.wxs"), false, { :binding => binding })
         erb_file(File.join(VANAGON_ROOT, "resources/windows/wix/project.filter.xslt.erb"), File.join(workdir, "wix", "#{name}.filter.xslt"), false, { :binding => binding })
       end
