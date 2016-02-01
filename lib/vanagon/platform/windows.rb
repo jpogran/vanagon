@@ -44,6 +44,9 @@ class Vanagon
         ["chocolateyInstall.ps1", "chocolateyUninstall.ps1"].each do |win_file|
           FileUtils.copy(File.join(VANAGON_ROOT, "resources/windows/nuget/#{win_file}"), File.join(workdir, win_file))
         end
+
+        # MSI artifacts
+        erb_file(File.join(VANAGON_ROOT, "resources/windows/wix/project.wxs.erb"), File.join(workdir, "#{name}.wxs"), false, { :binding => binding })
       end
 
       # The specific bits used to generate a windows nuget package for a given project
@@ -82,6 +85,8 @@ class Vanagon
         # Actual array of commands to be written to the Makefile
         ["mkdir -p output/#{target_dir}",
         "mkdir -p $(tempdir)/#{project.name}/staging",
+        "mkdir -p $(tempdir)/wix",
+        "#{@copy} *.wxs $(tempdir)/wix",
         "gunzip -c #{project.name}-#{project.version}.tar.gz | '#{@tar}' -C '$(tempdir)/#{project.name}/staging' --strip-components 1 -xf -",
         # Run the Heat command in a single pass
         # Heat command documentation at: http://wixtoolset.org/documentation/manual/v3/overview/heat.html
