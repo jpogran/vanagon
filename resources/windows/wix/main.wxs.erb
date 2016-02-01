@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product Id="<%= ProductCode %>" UpgradeCode="<%= UpgradeCode %>" Name="<% ProductName %>" Language="1033" Codepage="1252" Version="<%= ProductVersionNumber %>" Manufacturer="<%= OurCompanyName %>">
+    <Package InstallerVersion="300" InstallScope="perMachine" Description="<% ProductName %> Installer" Comments="http://www.puppetlabs.com/" Compressed="yes" Platform="<%= Platform %>" />
+    <MajorUpgrade AllowDowngrades="yes" />
+    <UI>
+      <UIRef Id="WixUI_PuppetInstallDir"/>
+      <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+      <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Manage your first resources on this node, explore the Puppet community and get support using the shortcuts in the Documentation folder of your Start Menu." />
+    </UI>
+    <Media Id="1" Cabinet="<%= Product %>.cab" EmbedCab="yes" CompressionLevel="high" />
+
+    <Feature Id="<%= ProductName %>Runtime" Title="<%= OurProductName %> Runtime" Level="1">
+      <ComponentRef Id="ProductComponentGroup" />
+    </Feature>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id="<%= PlatformProgramFilesFolder %>" >
+        <Directory Id='PuppetLabs' Name="<%= CompanyName %>">
+          <Directory Id='INSTALLDIR' Name="<%= OurProductName %>"/>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <WixVariable Id="WixUILicenseRtf" Value="conf\windows\stage\misc\LICENSE.rtf" Overridable="yes" />
+    <WixVariable Id="WixUIBannerBmp" Value="wix\ui\bitmaps\bannrbmp.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="wix\ui\bitmaps\dlgbmp-foss.bmp" />
+    <WixVariable Id="WixUIExclamationIco" Value="wix\ui\bitmaps\exclamic.ico" />
+    <WixVariable Id="WixUIInfoIco" Value="wix\ui\bitmaps\info.ico" />
+    <WixVariable Id="WixUINewIco" Value="wix\ui\bitmaps\new.ico" />
+    <WixVariable Id="WixUIUpIco" Value="wix\ui\bitmaps\up.ico" />
+
+    <Icon Id="<%= CompanyName %>.ico" SourceFile="conf\windows\stage\misc\puppetlabs.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="<%= CompanyName %>.ico" />
+    <Property Id="VersionUIString" Value="<%= VersionUIString %>" />
+    <Property Id="ARPHELPLINK" Value="<%= HelpLink %>" />
+
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLDIR]" After="CostFinalize" />
+    <Property Id="INSTALLDIR">
+      <RegistrySearch Id="RecallInstallDir" Root="HKLM" Key="SOFTWARE\<%= CompanyName %>\<%= ProductName %>" Name="<%= RememberedInstallDirRegKey %>" Type="raw" Win64="no" />
+    </Property>
+    <Property Id="INSTALLDIR_X86" >
+      <RegistrySearch Id="RecallInstallDirx86" Root="HKLM" Key="SOFTWARE\<%= CompanyName %>\<%= ProductName %>" Name="RememberedInstallDir" Type="raw" Win64="no" />
+    </Property>
+
+    <?if <%= Platform %> = x86 ?>
+      <Component Id="RegistryEntriesArchitectureDependent" Guid="E6D5AF4F-ACC4-4D11-AFCE-299A9ED2152C" Win64="no" Permanent="yes">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\<%= CompanyName %>\<%= ProductName %>" Action="create" >
+          <RegistryValue Type="integer" Value="0"/>
+          <RegistryValue Name="RememberedInstallDir" Type="string" Value="[INSTALLDIR]"  KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+    <?else?>
+      <Component Id="RegistryEntriesArchitectureDependent" Guid="E6D5AF4F-ACC4-4D11-AFCE-299A9ED2152C" Win64="no" Permanent="yes">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\<%= CompanyName %>\<%= ProductName %>" Action="create" >
+          <RegistryValue Type="integer" Value="0"/>
+          <RegistryValue Name="RememberedInstallDir" Type="string" Value="[INSTALLDIR_X86]" />
+          <RegistryValue Name="RememberedInstallDir64" Type="string" Value="[INSTALLDIR]" KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+    <?endif?>
+
+  <!-- INSTALLDIR -->
+  <CustomAction Id="SaveCmdLineInstallDir" Property="CMDLINE_INSTALLDIR" Value="[INSTALLDIR]" Execute="firstSequence" />
+  <CustomAction Id="SetFromCmdLineInstallDir" Property="INSTALLDIR" Value="[CMDLINE_INSTALLDIR]" Execute="firstSequence" />
+
+  <?if <%= Platform %> = x86 ?>
+    <CustomAction Id="Remove64BitPath_SetProp" Property="Remove64BitPath" Value="&quot;[%WINDIR]\System32\WindowsPowerShell\v1.0\powershell.exe&quot; -NoLogo -NonInteractive -InputFormat None -NoProfile -ExecutionPolicy Bypass -Command &quot;[\[]System.Text.RegularExpressions.Regex[\]]::Replace([\[]Microsoft.Win32.Registry[\]]::LocalMachine.OpenSubKey(&apos;SYSTEM\CurrentControlSet\Control\Session Manager\Environment\&apos;).GetValue(&apos;PATH&apos;, &apos;&apos;, [\[]Microsoft.Win32.RegistryValueOptions[\]]::DoNotExpandEnvironmentNames).ToString(),  [\[]System.Text.RegularExpressions.Regex[\]]::Escape(&apos;[ProgramFiles64Folder]$(var.OurCompanyName)\Puppet\bin&apos;) + &apos;([\?]&gt;;)[\?]&apos;, &apos;&apos;, [\[]System.Text.RegularExpressions.RegexOptions[\]]::IgnoreCase) | %[\{][\[]System.Environment[\]]::SetEnvironmentVariable(&apos;PATH&apos;,$_, &apos;Machine&apos;)[\}]&quot;" Execute="immediate" />
+    <CustomAction Id="Remove64BitPath" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Return="ignore" />
+    <CustomAction Id="Remove64BitProgramFiles_SetProp" Property="Remove64BitProgramFiles" Value="&quot;[%WINDIR]\System32\cmd.exe&quot; /c IF EXIST &quot;[ProgramFiles64Folder]$(var.OurCompanyName)\&quot; rmdir /s /q &quot;[ProgramFiles64Folder]$(var.OurCompanyName)&quot;" Execute="immediate" />
+    <CustomAction Id="Remove64BitProgramFiles" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Return="ignore" />
+  <?endif?>
+
+  <InstallUISequence>
+    <!-- INSTALLDIR -->
+    <Custom Action='SaveCmdLineInstallDir' Before='AppSearch' />
+    <Custom Action='SetFromCmdLineInstallDir' After='AppSearch'>CMDLINE_INSTALLDIR</Custom>
+  </InstallUISequence>
+  <InstallExecuteSequence>
+    <!-- INSTALLDIR -->
+    <Custom Action='SaveCmdLineInstallDir' Before='AppSearch' />
+    <Custom Action='SetFromCmdLineInstallDir' After='AppSearch'>CMDLINE_INSTALLDIR</Custom>
+    <?if <%= Platform %> = x86 ?>
+      <Custom Action='Remove64BitPath_SetProp' After='CostFinalize' />
+      <Custom Action='Remove64BitProgramFiles_SetProp' After='CostFinalize' />
+      <Custom Action='Remove64BitProgramFiles' After='InstallFiles'><![CDATA[VersionNT64 >= 100 AND <%= Win64 %> = no AND NOT (&<%= Product %>Runtime = 2)]]></Custom>
+      <Custom Action='Remove64BitPath' After='InstallFiles'><![CDATA[VersionNT64 >= 100 AND <%= Win64 %> = no AND NOT (&<%= Product %>Runtime = 2)]]></Custom>
+    <?endif?>
+  </InstallExecuteSequence>
+  </Product>
+</Wix>
