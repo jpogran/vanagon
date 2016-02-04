@@ -105,7 +105,7 @@ class Vanagon
       # @return [Array] list of commands required to build an msi package for the given project from a tarball
       def generate_msi_package(project)
         target_dir = project.repo ? output_dir(project.repo) : output_dir
-        cg_name = "compfiles"
+        cg_name = "ProductComponentGroup"
         dir_ref = "INSTALLDIR"
         # Actual array of commands to be written to the Makefile
         ["mkdir -p output/#{target_dir}",
